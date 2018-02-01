@@ -1,0 +1,66 @@
+package Example;
+
+import java_cup.runtime.*;
+
+parser code {:
+	public static void main(String args[]) throws Exception {
+		SymbolFactory sf = new DefaultSymbolFactory();
+		if (args.length==0) new Parser(new Scanner(System.in,sf),sf).parse();
+		else new Parser(new Scanner(new java.io.FileInputStream(args[0]),sf),sf).parse();
+	}
+:}
+
+// Here the terminal values for the parser are declared. They are linked to the tokens defined in the lexer file. The tokens TRUE, FALSE, NUMBER and STRING have a Java data type defined so that they could later be used in Java code inside the parser. 
+
+
+terminal COMMA, COLON, LSQBRACKET, RSQBRACKET, LCLBRACKET, RCLBRACKET, NULL;
+terminal Boolean TRUE, FALSE;
+terminal Double NUMBER;
+terminal String STRING;
+
+//The non-terminal values that will be used in the grammar are defined here.
+
+non terminal object, array, value, value_list, pair_list, string_value_pair;
+
+//These non terminals are used to test the code by printing out the values in an array and the name/value pairs in an object.
+
+non terminal Object print_value;
+
+non terminal String print_string;
+
+
+
+// Here the grammar is defined. This closely follows the JSON specification. 
+
+//A value in JSON can be a string, number, boolean, null, object or array. The extra code in here prints out the values.
+
+value::= STRING:n {: RESULT = n; :}|NUMBER:n {: RESULT = n; :}|TRUE:n {: RESULT = n; :}|FALSE:n {: RESULT = n; :}|NULL:n {: RESULT = n; :}|object:n {: RESULT = n; :}|array:n {: RESULT = n; :} ;
+
+//this will print the value in an array or a JSON object. this includes all types of value, not just string or numerical. 
+print_value ::= value:e {: System.out.println("value: "+e+""); :};
+
+//An object in JSON can be a list of 1 or more string/value pairs or it can be a left curly bracket followed by a right curly bracket with nothing inside. The individual string/value pairs are a string followed by a colon followed by a  value and the pairs are separated by commas within the list.
+
+//Error handling was added so that when the parser encounters an error within object, the parsing will stop until the end of the current curly bracket (i.e. a right curly bracket).
+ 
+object ::=  LCLBRACKET pair_list RCLBRACKET | LCLBRACKET RCLBRACKET| error RCLBRACKET ;
+pair_list ::=  pair_list COMMA string_value_pair |string_value_pair;
+string_value_pair ::= print_string COLON print_value ;
+
+// this will print the name in a name/value pair within a JSON object. 
+
+print_string ::= STRING:s  {: System.out.println(" name: "+s+""); :};
+
+
+//An array in JSON can be a list of 1 or more values or it can be a left square bracket followed by a right square bracket with nothing inside. The individual values within the list are separated by commas.  
+
+//Error handling was added so that when the parser encounters an error within array, the parsing will stop until the end of the current square bracket (i.e. a right sqaure bracket).
+
+array ::= LSQBRACKET value_list RSQBRACKET | LSQBRACKET RSQBRACKET| error RSQBRACKET;
+value_list ::= value_list COMMA print_value  | print_value  ;
+
+
+
+
+
+
